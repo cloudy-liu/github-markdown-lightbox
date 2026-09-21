@@ -1,192 +1,201 @@
 # GitHub Markdown Image Lightbox
 
-在 GitHub 的 README、Issue、Pull Request 和 Gist 中，点击内容图片后直接在当前页面预览。支持滚轮缩放、拖拽平移、连续切图和键盘操作。
+English | [简体中文](./README.zh-CN.md)
 
-- 版本：`0.1.0`
-- 运行环境：Chrome、Edge 或 Firefox，加 Tampermonkey（篡改猴）
+Preview images from GitHub READMEs, issues, pull requests, and Gists without
+leaving the page. The userscript adds an in-page lightbox with zoom, pan,
+image navigation, and keyboard controls.
 
-## 它解决什么问题
+- Version: `0.1.0`
+- Requires: Chrome, Edge, or Firefox with Tampermonkey
 
-GitHub 上的 Markdown 图片经常链接到原始文件或外部地址。默认点击后，浏览器可能离开当前页面。看完图片再返回时，还要重新寻找刚才读到的位置。
+## Why this exists
+
+Images in GitHub Markdown often link to a raw file or an external page. A
+normal click can take you away from what you were reading, and returning means
+finding your place again.
 
 ```text
-GitHub 默认行为
+GitHub's default behavior
 
-阅读 README -> 点击图片 -> 跳到原图或外部页面 -> 返回 -> 重新找阅读位置
+Read -> click an image -> leave the page -> go back -> find your place again
 
-安装本脚本后
+With this userscript
 
-阅读 README -> 点击图片 -> 当前页面灯箱
-                              |-- 滚轮缩放
-                              |-- 拖拽平移
-                              |-- 左右切图
-                    关闭灯箱 -> 回到原来的阅读位置
+Read -> click an image -> open an in-page lightbox
+                              |-- zoom with the mouse wheel
+                              |-- drag to pan
+                              |-- move between images
+                    close it -> continue where you left off
 ```
 
-脚本优先使用 GitHub 已经渲染成功的图片地址；对于链接到仓库文件的图片，
-则按需转换为 `raw` 地址。外部图片会保留
-`camo.githubusercontent.com` 代理地址，以降低被 GitHub 内容安全策略拦截的概率。
+The script prefers image URLs that GitHub has already rendered. For images
+linked to repository files, it can convert a `blob` URL to a `raw` URL. It
+keeps `camo.githubusercontent.com` URLs for external images to reduce failures
+caused by GitHub's Content Security Policy.
 
-## 功能
+## Features
 
-- 在当前页面预览 Markdown 内容区的大图
-- 支持 README，以及 Issue、Pull Request 和 Gist 中渲染的 Markdown 内容
-- 将指针放在灯箱图片上滚动滚轮，以指针为中心缩放；最高为初始适配尺寸的 `8x`
-- 放大后可以拖拽平移
-- 使用按钮或方向键连续查看上一张、下一张图片
-- 支持 Escape 关闭、数字 `0` 重置缩放
-- 支持键盘打开图片和灯箱内焦点循环
-- 自动适配 GitHub 的页面内导航，无需反复重载脚本
-- 过滤已知徽章地址、GitHub 的 Emoji/头像类名和过小图片
-- 不收集数据，不写入浏览器存储
+- Opens eligible Markdown images without leaving the current page
+- Works in READMEs and rendered Markdown in issues, pull requests, and Gists
+- Zooms around the pointer up to `8x` the initial fitted size
+- Pans a zoomed image by dragging
+- Moves between images with buttons or arrow keys
+- Supports `Escape` to close and `0` to reset the image transform
+- Supports keyboard activation and keeps focus inside the open lightbox
+- Handles GitHub's in-page navigation without reloading the userscript
+- Filters known badge URLs, GitHub emoji/avatar classes, and small images
+- Stores no browsing data or settings
 
-## 安装
+## Install
 
-### 第一步：安装 Tampermonkey
+### Step 1: Install Tampermonkey
 
-先为浏览器安装 Tampermonkey。打开对应商店后，点击“添加至
-Chrome”/“获取”/“添加到 Firefox”，再确认添加扩展：
+Install Tampermonkey from your browser's official extension store:
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 - [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
 - [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/tampermonkey/)
-- [Tampermonkey 官方版本列表](https://www.tampermonkey.net/faq.php?q=Q406)
+- [Tampermonkey's official version list](https://www.tampermonkey.net/faq.php?q=Q406)
 
-安装完成后，浏览器工具栏中会出现 Tampermonkey 图标。如果没有看到，打开
-“扩展程序”（拼图）菜单，找到 Tampermonkey 并将它固定到工具栏。
+Choose `Add to Chrome`, `Get`, or `Add to Firefox`, then confirm the browser
+prompt. If the Tampermonkey icon is hidden, open the Extensions menu and pin
+it to the toolbar.
 
-### 第二步：允许 Tampermonkey 运行用户脚本
+### Step 2: Allow user scripts in Chromium browsers
 
-Tampermonkey 5.3 及更新版本在 Chrome、Edge 等 Chromium 浏览器中需要
-User Scripts API 权限。Chrome 138 及更新版本可这样开启：
+Tampermonkey 5.3 and later needs access to the User Scripts API in Chrome,
+Edge, and other Chromium-based browsers. On Chrome 138 and later:
 
-1. 右键点击浏览器工具栏中的 Tampermonkey 图标。
-2. 选择“管理扩展程序”。
-3. 打开“允许运行用户脚本”或 `Allow User Scripts`。
+1. Right-click the Tampermonkey toolbar icon.
+2. Select `Manage extension`.
+3. Enable `Allow User Scripts`.
 
-如果扩展详情页没有这个开关，启用“开发者模式”即可满足这项权限要求：
+If that switch is unavailable, open `chrome://extensions` in Chrome or
+`edge://extensions` in Edge and enable `Developer mode`. Either setting grants
+the required access. See [Tampermonkey's official instructions](https://www.tampermonkey.net/faq.php?q=Q209)
+for details. Firefox usually does not require this step.
 
-1. Chrome 打开 `chrome://extensions`，Edge 打开 `edge://extensions`。
-2. 开启页面上的“开发者模式”。
+### Step 3: Install the userscript
 
-“允许运行用户脚本”和“开发者模式”任选其一即可。可参考
-[Tampermonkey 官方说明](https://www.tampermonkey.net/faq.php?q=Q209)。Firefox
-通常不需要这一步。
+Use the direct installation link:
 
-### 第三步：安装脚本
+**[Install GitHub Markdown Image Lightbox](https://raw.githubusercontent.com/cloudy-liu/github-markdown-lightbox/master/github-markdown-lightbox.user.js)**
 
-#### 方法一：直接安装
+Tampermonkey should open its installation screen. Check that the script name
+is `GitHub Markdown Image Lightbox`, confirm that it matches `github.com` and
+`gist.github.com`, then select `Install`.
 
-点击下面的链接：
+Refresh a GitHub page that contains Markdown images. Eligible images show a
+zoom-in cursor and open in the lightbox when clicked. If the page has more
+than one eligible image, the lightbox shows the current and total count, such
+as `1 / 4`.
 
-**[安装 GitHub Markdown Image Lightbox](https://raw.githubusercontent.com/cloudy-liu/github-markdown-lightbox/master/github-markdown-lightbox.user.js)**
+### Manual installation
 
-正常情况下，Tampermonkey 会打开脚本安装页面：
+If the direct link only displays JavaScript source:
 
-1. 确认脚本名称是 `GitHub Markdown Image Lightbox`。
-2. 确认匹配站点包含 `github.com` 和 `gist.github.com`。
-3. 点击“安装”。
-4. 打开或刷新一个带有内容图片的 GitHub 页面。
+1. Open [`github-markdown-lightbox.user.js`](./github-markdown-lightbox.user.js).
+2. Select `Raw` in the upper-right corner of the GitHub file page.
+3. Copy the complete source.
+4. Open the Tampermonkey dashboard.
+5. Select `Add a new script` or the `+` tab.
+6. Delete the generated template and paste the copied source.
+7. Press `Ctrl+S`, use `Command+S` on macOS, or select the editor's save button.
+8. Make sure the script is enabled, then refresh GitHub.
 
-安装成功后，符合条件的图片会显示放大镜指针；点击后，页面中央会出现灯箱。
-如果页面有多张图片，灯箱顶部还会显示 `1 / N` 计数。
+## Use
 
-#### 方法二：手动复制
+Click an eligible image inside rendered GitHub Markdown to open the lightbox.
 
-如果点击安装链接后只看到 JavaScript 文本：
-
-1. 打开 [`github-markdown-lightbox.user.js`](./github-markdown-lightbox.user.js)。
-2. 点击 GitHub 页面右上方的 `Raw`。
-3. 全选并复制页面中的全部代码。
-4. 点击 Tampermonkey 图标，进入“管理面板”。
-5. 点击“添加新脚本”或标签栏中的 `+`。
-6. 删除编辑器内自动生成的模板。
-7. 粘贴刚才复制的完整代码。
-8. 按 `Ctrl+S`（macOS 为 `Command+S`）或点击编辑器的保存按钮。
-9. 确认脚本右侧的开关处于启用状态。
-10. 刷新 GitHub 页面。
-
-## 使用方法
-
-在 GitHub Markdown 内容区点击一张大图，灯箱会在当前页面打开。
-
-| 操作 | 结果 |
+| Action | Result |
 | --- | --- |
-| 点击内容图片 | 打开灯箱 |
-| 指针位于图片上时滚动鼠标滚轮 | 以鼠标位置为中心缩放 |
-| 放大后拖拽 | 平移图片 |
-| 点击左、右按钮 | 查看上一张、下一张图片 |
-| `Left` / `Right` | 查看上一张、下一张图片 |
-| `0` | 重置缩放和平移 |
-| `Escape` | 关闭灯箱 |
-| 灯箱处于初始 `1x`、未放大状态时点击图片 | 关闭灯箱 |
-| 点击图片外的黑色区域 | 关闭灯箱 |
-| `Tab` / `Shift+Tab` | 在灯箱按钮之间移动焦点 |
+| Click an eligible content image | Open the lightbox |
+| Scroll while the pointer is over the image | Zoom around the pointer |
+| Drag after zooming in | Pan the image |
+| Select the left or right button | Show the previous or next image |
+| Press `Left` or `Right` | Show the previous or next image |
+| Press `0` | Reset zoom and position |
+| Press `Escape` | Close the lightbox |
+| Click the image at the initial `1x` scale | Close the lightbox |
+| Click the dark area outside the image | Close the lightbox |
+| Press `Tab` or `Shift+Tab` | Move focus between lightbox controls |
 
-带链接的图片可以用 `Enter` 打开。没有链接的图片可以用 `Enter` 或空格打开。
+Press `Enter` to open a linked image. For an unlinked image, use `Enter` or
+`Space`.
 
-## 工作方式
+## How it works
 
 ```text
-点击 .markdown-body 中的图片
-  -> 排除已知徽章、GitHub 特定图片类名和过小图片
-  -> 解析适合灯箱显示的图片地址
-     -> 外部图片复用已渲染地址，包括 camo.githubusercontent.com
-     -> 仓库 blob 图片链接按需转换为 raw 地址
-  -> 在当前页面创建灯箱
-  -> 提供缩放、平移、切图和键盘控制
+Click an image inside .markdown-body
+  -> reject known badges, GitHub-specific image classes, and small images
+  -> resolve an image URL suitable for the lightbox
+     -> reuse rendered URLs for external images, including GitHub Camo URLs
+     -> convert repository blob image links to raw URLs when needed
+  -> create the lightbox on the current page
+  -> provide zoom, pan, navigation, and keyboard controls
 ```
 
-脚本只申请 `GM_addStyle`，用于向页面加入灯箱样式。脚本逻辑没有远程代码
-依赖，不发送统计数据，也不使用 Tampermonkey 存储。
+The userscript requests only the `GM_addStyle` permission, which it uses to
+add the lightbox styles. Its runtime logic has no remote code dependency. It
+sends no analytics and uses no Tampermonkey storage.
 
-## 常见问题
+## Troubleshooting
 
-### 安装后点击图片没有反应
+### Nothing happens when I click an image
 
-依次检查：
+Check the following:
 
-1. Tampermonkey 本身是否启用。
-2. 脚本右侧的开关是否启用。
-3. Chrome 或 Edge 是否已经打开“允许运行用户脚本”或开发者模式。
-4. 当前地址是否以 `https://github.com/` 或 `https://gist.github.com/` 开头。
-5. 是否刷新过安装脚本之前已经打开的 GitHub 页面。
+1. Tampermonkey is enabled.
+2. `GitHub Markdown Image Lightbox` is enabled in the Tampermonkey dashboard.
+3. Chrome or Edge allows user scripts or has Developer mode enabled.
+4. The page URL starts with `https://github.com/` or `https://gist.github.com/`.
+5. You refreshed GitHub after installing the userscript.
 
-### 徽章、头像或很小的图标不能打开
+### A badge, avatar, or small icon does not open
 
-这是预期行为。脚本主动跳过构建状态徽章、Emoji、头像，以及宽度和高度都
-小于 `200` 像素的小图。任一边达到 `200` 像素的普通内容图片仍可打开。
+This is intentional. The script skips known build badge providers, GitHub
+emoji and avatar classes, and images whose natural width and height are both
+below `200` pixels. A normal content image remains eligible if either side is
+at least `200` pixels.
 
-### 某张图片仍然无法显示
+### An image still fails to load
 
-先确认它能否在原始 GitHub 页面中正常显示。脚本优先复用 GitHub 已经渲染的
-图片地址，并可能将仓库图片的 `/blob/` 链接转换为 `/raw/`。如果原资源无法
-访问，灯箱也无法恢复它。
+Check whether GitHub can display the image on the original page. The script
+prefers the URL GitHub already rendered and may convert a repository image
+link from `/blob/` to `/raw/`. The lightbox cannot load an inaccessible
+resource.
 
-### 点击安装链接后没有出现 Tampermonkey 安装页
+### The direct link does not open Tampermonkey
 
-使用上面的“手动复制”方法。还可以检查 Tampermonkey 是否有权限访问 GitHub，以及浏览器是否允许用户脚本运行。
+Use the manual installation steps above. Also check that Tampermonkey can
+access GitHub and that your browser allows user scripts.
 
-### 如何更新
+### Updating
 
-这个项目没有配置远程自动更新地址。获取新版本时，重新点击安装链接并确认更新，或者在 Tampermonkey 编辑器中用新版文件覆盖旧代码。
+This project does not configure `@updateURL` or `@downloadURL`. To update,
+open the installation link again and confirm the update in Tampermonkey. You
+can also replace the old source in Tampermonkey's editor.
 
-### 如何卸载
+### Uninstalling
 
-打开 Tampermonkey 管理面板，找到 `GitHub Markdown Image Lightbox`，点击删除即可。删除后刷新 GitHub 页面。
+Open the Tampermonkey dashboard, find `GitHub Markdown Image Lightbox`, and
+delete it. Refresh any open GitHub pages afterward.
 
-## 隐私和权限
+## Privacy and permissions
 
-- 只匹配 `github.com` 和 `gist.github.com`
-- 不读取或保存账号凭据
-- 不收集浏览记录或使用数据
-- 不发送统计或遥测数据；打开灯箱时只会产生正常的图片资源请求
-- 不包含 `@updateURL` 或 `@downloadURL`
-- 唯一的 Tampermonkey 权限是 `GM_addStyle`
+- Matches only `github.com` and `gist.github.com`
+- Does not read or store account credentials
+- Does not collect browsing history or usage data
+- Sends no analytics or telemetry
+- Opening the lightbox may request the displayed image from its source URL
+- Does not include `@updateURL` or `@downloadURL`
+- Requests only the `GM_addStyle` Tampermonkey permission
 
-## 开发检查
+## Development check
 
-项目没有构建步骤或运行时依赖。修改脚本后可以直接检查 JavaScript 语法：
+The project has no build step or runtime package dependency. After changing
+the userscript, check its JavaScript syntax with:
 
 ```powershell
 node --check .\github-markdown-lightbox.user.js
